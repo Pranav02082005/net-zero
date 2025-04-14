@@ -1,0 +1,111 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>NetZero Dashboard</title>
+    <link rel="stylesheet" href="dashboard.css">
+    <link href="https://fonts.googleapis.com/icon?family=Material+Icons" rel="stylesheet">
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <!-- Add type="module" to use ES6 modules -->
+    <script type="module" src="firebase-config.js"></script>
+    <script type="module" src="realtime-data.js"></script>
+</head>
+<body>
+    <div class="dashboard-container">
+        <aside class="sidebar">
+            <div class="logo">
+                <img src="assets/logo.png" alt="NetZero Logo">
+                <h1>NetZero Impact</h1>
+            </div>
+            <ul class="nav-links">
+                <li class="active"><a href="#dashboard"><i class="material-icons">dashboard</i>Dashboard</a></li>
+                <li><a href="#sensors"><i class="material-icons">sensors</i>ESP32 Sensors</a></li>
+                <li><a href="analytics.html"><i class="material-icons">analytics</i>AI Analytics</a></li>
+                <li><a href="#carbon"><i class="material-icons">eco</i>Carbon Metrics</a></li>
+                <li><a href="#reports"><i class="material-icons">description</i>Reports</a></li>
+                <li><a href="#alerts"><i class="material-icons">notifications</i>Alerts</a></li>
+                <li><a href="#settings"><i class="material-icons">settings</i>Settings</a></li>
+                <li class="home-link"><a href="landing.html"><i class="material-icons">home</i>Back to Home</a></li>
+            </ul>
+        </aside>
+
+        <main class="main-content">
+            <!-- Add this section for real-time sensor metrics -->
+            <div class="sensor-metrics">
+                <div class="metric-card temperature">
+                    <div class="metric-circle">
+                        <svg class="progress-ring">
+                            <circle class="progress-ring-circle" cx="60" cy="60" r="54"/>
+                        </svg>
+                        <div class="metric-value">
+                            <span class="current-value">24</span>°C
+                        </div>
+                    </div>
+                    <h3>Temperature</h3>
+                    <div class="metric-details">
+                        <span class="range">Range: 18-30°C</span>
+                        <span class="status optimal">Optimal</span>
+                    </div>
+                </div>
+
+                <div class="metric-card humidity">
+                    <div class="metric-circle">
+                        <svg class="progress-ring">
+                            <circle class="progress-ring-circle" cx="60" cy="60" r="54"/>
+                        </svg>
+                        <div class="metric-value">
+                            <span class="current-value">45</span>%
+                        </div>
+                    </div>
+                    <h3>Humidity</h3>
+                    <div class="metric-details">
+                        <span class="range">Range: 30-60%</span>
+                        <span class="status warning">High</span>
+                    </div>
+                </div>
+
+                <div class="metric-card co2">
+                    <div class="metric-circle">
+                        <svg class="progress-ring">
+                            <circle class="progress-ring-circle" cx="60" cy="60" r="54"/>
+                        </svg>
+                        <div class="metric-value">
+                            <span class="current-value">450</span>ppm
+                        </div>
+                    </div>
+                    <h3>CO2 Level</h3>
+                    <div class="metric-details">
+                        <span class="range">Range: 400-1000ppm</span>
+                        <span class="status optimal">Good</span>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Real-time sensor data section -->
+            <div class="sensor-data">
+                <h2>Real-time Sensor Data</h2>
+                <div class="data-grid">
+                    <div class="chart-container">
+                        <canvas id="realTimeChart"></canvas>
+                    </div>
+                    <div class="sensor-stats">
+                        <div class="stat-item">
+                            <h4>Last Updated</h4>
+                            <p id="lastUpdate">Just now</p>
+                        </div>
+                        <div class="stat-item">
+                            <h4>Data Points</h4>
+                            <p id="dataPoints">1,234</p>
+                        </div>
+                        <div class="stat-item">
+                            <h4>Status</h4>
+                            <p class="status active">Active</p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </main>
+    </div>
+</body>
+</html> 

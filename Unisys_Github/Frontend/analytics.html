@@ -1,0 +1,120 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>AI Analytics - NetZero Impact</title>
+    <link rel="stylesheet" href="dashboard.css">
+    <link href="https://fonts.googleapis.com/icon?family=Material+Icons" rel="stylesheet">
+    
+    <!-- Load Chart.js and its dependencies -->
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/chartjs-adapter-date-fns"></script>
+    <script src="https://cdn.jsdelivr.net/npm/date-fns"></script>
+    <!-- Moment.js for time handling -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/moment.js/2.29.1/moment.min.js"></script>
+</head>
+<body>
+    <div class="dashboard-container">
+        <!-- Sidebar Navigation -->
+        <aside class="sidebar">
+            <div class="logo">
+                <img src="assets/logo.png" alt="NetZero Logo">
+                <h1>NetZero Impact</h1>
+            </div>
+            <ul class="nav-links">
+                <li><a href="dashboard.html"><i class="material-icons">dashboard</i>Dashboard</a></li>
+                <li><a href="#sensors"><i class="material-icons">sensors</i>ESP32 Sensors</a></li>
+                <li class="active"><a href="analytics.html"><i class="material-icons">analytics</i>AI Analytics</a></li>
+                <li><a href="#carbon"><i class="material-icons">eco</i>Carbon Metrics</a></li>
+                <li><a href="#reports"><i class="material-icons">description</i>Reports</a></li>
+                <li><a href="#alerts"><i class="material-icons">notifications</i>Alerts</a></li>
+                <li><a href="#settings"><i class="material-icons">settings</i>Settings</a></li>
+                <li class="home-link"><a href="landing.html"><i class="material-icons">home</i>Back to Home</a></li>
+            </ul>
+        </aside>
+
+        <!-- Main Content -->
+        <main class="main-content">
+            <header>
+                <h1>AI Analytics</h1>
+                <div class="header-controls">
+                    <button id="refreshData" class="refresh-btn">
+                        <i class="material-icons">refresh</i>
+                        Refresh Data
+                    </button>
+                </div>
+            </header>
+
+            <!-- Error Alert -->
+            <div id="errorAlert" class="error-alert" style="display: none;">
+                <i class="material-icons">error</i>
+                <span id="errorMessage"></span>
+                <button onclick="this.parentElement.style.display='none'">
+                    <i class="material-icons">close</i>
+                </button>
+            </div>
+
+            <!-- CO2 Predictions Section -->
+            <section class="analytics-section">
+                <h2>CO2 Predictions</h2>
+                <div class="card">
+                    <div class="card-header">
+                        <h3>Weekly CO2 Forecast</h3>
+                        <div class="card-controls">
+                            <select id="predictionTimeframe">
+                                <option value="24">Last 24 Hours</option>
+                                <option value="168" selected>Last Week</option>
+                                <option value="720">Last Month</option>
+                            </select>
+                        </div>
+                    </div>
+                    <div class="chart-container">
+                        <canvas id="co2PredictionChart"></canvas>
+                    </div>
+                    <div class="metrics-grid">
+                        <div class="metric-card">
+                            <h4>Mean Absolute Error</h4>
+                            <p id="maeValue">Loading...</p>
+                        </div>
+                        <div class="metric-card">
+                            <h4>Mean Square Error</h4>
+                            <p id="mseValue">Loading...</p>
+                        </div>
+                    </div>
+                </div>
+            </section>
+
+            <!-- Anomaly Detection Section -->
+            <section class="analytics-section">
+                <h2>Anomaly Detection</h2>
+                <div class="card">
+                    <div class="card-header">
+                        <h3>CO2 Anomalies</h3>
+                        <div class="card-controls">
+                            <select id="anomalyTimeframe">
+                                <option value="24">Last 24 Hours</option>
+                                <option value="168" selected>Last Week</option>
+                                <option value="720">Last Month</option>
+                            </select>
+                        </div>
+                    </div>
+                    <div class="chart-container">
+                        <canvas id="anomalyChart"></canvas>
+                    </div>
+                    <div class="anomaly-list">
+                        <h4>Detected Anomalies</h4>
+                        <div id="anomalyList" class="anomaly-items">
+                            Loading anomalies...
+                        </div>
+                    </div>
+                </div>
+            </section>
+        </main>
+    </div>
+
+    <!-- Scripts -->
+    <script src="firebase-config.js"></script>
+    <script src="analytics.js"></script>
+</body>
+</html> 
