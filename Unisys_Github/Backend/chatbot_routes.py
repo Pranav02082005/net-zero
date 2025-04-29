@@ -27,6 +27,7 @@ class ChatResponse(BaseModel):
 conversation_history = ['''Main constraint: Use proper formatting.
 Keep the responses under 80 words, unless the user asks for more.
 Focus on environmental and CO2-related topics.
+You exist to help industry professionals to monitor their carbon footprint and provide ways toreduce it.
 Provide specific, actionable insights when possible.''']
 
 @router.post("/chat")

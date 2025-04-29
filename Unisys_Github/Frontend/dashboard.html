@@ -7,106 +7,501 @@
     <link rel="stylesheet" href="dashboard.css">
     <link href="https://fonts.googleapis.com/icon?family=Material+Icons" rel="stylesheet">
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
-    <!-- Add type="module" to use ES6 modules -->
-    <script type="module" src="firebase-config.js"></script>
-    <script type="module" src="realtime-data.js"></script>
-</head>
-<body>
-    <div class="dashboard-container">
-        <aside class="sidebar">
-            <div class="logo">
-                <img src="assets/logo.png" alt="NetZero Logo">
-                <h1>NetZero Impact</h1>
-            </div>
-            <ul class="nav-links">
-                <li class="active"><a href="dashboard.html"><i class="material-icons">dashboard</i>Dashboard</a></li>
-                <li><a href="#sensors"><i class="material-icons">sensors</i>ESP32 Sensors</a></li>
-                <li><a href="analytics.html"><i class="material-icons">analytics</i>AI Analytics</a></li>
-                <li><a href="chatbot.html"><i class="material-icons">chat</i>Chatbot</a></li>
-                <li><a href="#carbon"><i class="material-icons">eco</i>Carbon Metrics</a></li>
-                <li><a href="#reports"><i class="material-icons">description</i>Reports</a></li>
-                <li><a href="#alerts"><i class="material-icons">notifications</i>Alerts</a></li>
-                <li><a href="#settings"><i class="material-icons">settings</i>Settings</a></li>
-                <li class="home-link"><a href="landing.html"><i class="material-icons">home</i>Back to Home</a></li>
-            </ul>
-        </aside>
+    <!-- Firebase & Realtime Module Scripts -->
+    <script type="module">
+        import { initializeApp } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-app.js";
+        import { getDatabase, ref, onValue, get } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-database.js";
 
-        <main class="main-content">
-            <!-- Add this section for real-time sensor metrics -->
-            <div class="sensor-metrics">
-                <div class="metric-card temperature">
-                    <div class="metric-circle">
-                        <svg class="progress-ring">
-                            <circle class="progress-ring-circle" cx="60" cy="60" r="54"/>
-                        </svg>
-                        <div class="metric-value">
-                            <span class="current-value">24</span>°C
+        // Firebase config
+        const firebaseConfig = {
+            apiKey: "AIzaSyDizW8fv-DgeMihB1gQahXAYFi7Yqz9hqk",
+            authDomain: "net-zero-c8cd6.firebaseapp.com",
+            databaseURL: "https://net-zero-c8cd6-default-rtdb.asia-southeast1.firebasedatabase.app",
+            projectId: "net-zero-c8cd6",
+            storageBucket: "net-zero-c8cd6.appspot.com",
+            messagingSenderId: "9310338529",
+            appId: "1:9310338529:web:bc5043a01a4190d07a66a0",
+            measurementId: "G-2BZPCEDXFE"
+        };
+
+        // Initialize Firebase
+        const app = initializeApp(firebaseConfig);
+        const db = getDatabase(app);
+        const sensorRef = ref(db, 'ESP32/Logs');
+
+        // DOM elements
+        const temperatureCircle = document.querySelector('.temperature .progress-ring-circle');
+        const humidityCircle = document.querySelector('.humidity .progress-ring-circle');
+        const co2Circle = document.querySelector('.co2 .progress-ring-circle');
+
+        const tempVal = document.querySelector('.temperature .current-value');
+        const humVal = document.querySelector('.humidity .current-value');
+        const co2Val = document.querySelector('.co2 .current-value');
+        const lastUpdate = document.getElementById('lastUpdate');
+        const dataPoints = document.getElementById('dataPoints');
+
+        const realTimeChartCtx = document.getElementById('realTimeChart').getContext('2d');
+        const tempHumidityChartCtx = document.getElementById('tempHumidityChart').getContext('2d');
+        const co2ChartCtx = document.getElementById('co2Chart').getContext('2d');
+
+        // CO2 thresholds for different levels
+        const co2Thresholds = {
+            optimal: 400,
+            warning: 800,
+            danger: 1000
+        };
+
+        const realTimeChart = new Chart(realTimeChartCtx, {
+            type: 'line',
+            data: {
+                labels: [],
+                datasets: [{
+                    label: 'CO2 Level (ppm)',
+                    data: [],
+                    borderColor: '#f44336',
+                    backgroundColor: 'rgba(244, 67, 54, 0.1)',
+                    tension: 0.4,
+                    fill: true,
+                    pointRadius: 4,
+                    pointHoverRadius: 6
+                }]
+            },
+            options: {
+                responsive: true,
+                maintainAspectRatio: false,
+                scales: {
+                    y: {
+                        beginAtZero: false,
+                        min: 300,
+                        max: 900,
+                        ticks: {
+                            stepSize: 100
+                        },
+                        grid: {
+                            color: 'rgba(0, 0, 0, 0.1)'
+                        }
+                    },
+                    x: {
+                        grid: {
+                            display: false
+                        }
+                    }
+                },
+                plugins: {
+                    legend: {
+                        display: true,
+                        position: 'top'
+                    },
+                    tooltip: {
+                        callbacks: {
+                            label: function(context) {
+                                const value = context.parsed.y;
+                                let status = '';
+                                if (value <= co2Thresholds.optimal) {
+                                    status = ' (Optimal)';
+                                } else if (value <= co2Thresholds.warning) {
+                                    status = ' (Warning)';
+                                } else {
+                                    status = ' (Danger)';
+                                }
+                                return `CO2: ${value}ppm${status}`;
+                            }
+                        }
+                    }
+                }
+            }
+        });
+
+        const tempHumidityChart = new Chart(tempHumidityChartCtx, {
+            type: 'line',
+            data: {
+                labels: [],
+                datasets: [
+                    { 
+                        label: 'Temperature (°C)', 
+                        data: [], 
+                        borderColor: '#2196f3', 
+                        backgroundColor: 'rgba(33, 150, 243, 0.1)',
+                        tension: 0.4,
+                        yAxisID: 'y',
+                        pointRadius: 0,
+                        borderWidth: 2
+                    },
+                    { 
+                        label: 'Humidity (%)', 
+                        data: [], 
+                        borderColor: '#4caf50', 
+                        backgroundColor: 'rgba(76, 175, 80, 0.1)',
+                        tension: 0.4,
+                        yAxisID: 'y1',
+                        pointRadius: 0,
+                        borderWidth: 2
+                    }
+                ]
+            },
+            options: {
+                responsive: true,
+                maintainAspectRatio: false,
+                interaction: {
+                    mode: 'index',
+                    intersect: false,
+                },
+                layout: {
+                    padding: {
+                        left: 10,
+                        right: 10,
+                        top: 20,
+                        bottom: 20
+                    }
+                },
+                scales: {
+                    x: {
+                        grid: {
+                            display: false
+                        },
+                        ticks: {
+                            maxRotation: 45,
+                            minRotation: 45,
+                            padding: 10,
+                            autoSkip: true,
+                            maxTicksLimit: 12
+                        }
+                    },
+                    y: {
+                        type: 'linear',
+                        display: true,
+                        position: 'left',
+                        title: {
+                            display: true,
+                            text: 'Temperature (°C)',
+                            padding: {
+                                bottom: 10
+                            }
+                        },
+                        grid: {
+                            color: 'rgba(0, 0, 0, 0.1)'
+                        }
+                    },
+                    y1: {
+                        type: 'linear',
+                        display: true,
+                        position: 'right',
+                        title: {
+                            display: true,
+                            text: 'Humidity (%)',
+                            padding: {
+                                bottom: 10
+                            }
+                        },
+                        grid: {
+                            drawOnChartArea: false
+                        }
+                    }
+                },
+                plugins: {
+                    legend: {
+                        position: 'top',
+                        align: 'center',
+                        labels: {
+                            boxWidth: 12,
+                            padding: 15
+                        }
+                    }
+                }
+            }
+        });
+
+        const co2Chart = new Chart(co2ChartCtx, {
+            type: 'line',
+            data: {
+                labels: [],
+                datasets: [{
+                    label: 'CO2 Level (ppm)',
+                    data: [],
+                    borderColor: '#f44336',
+                    backgroundColor: 'rgba(244, 67, 54, 0.1)',
+                    tension: 0.4,
+                    fill: true,
+                    pointRadius: 0,
+                    borderWidth: 2
+                }]
+            },
+            options: {
+                responsive: true,
+                maintainAspectRatio: false,
+                scales: {
+                    y: {
+                        beginAtZero: false,
+                        min: 300,
+                        max: 900,
+                        ticks: {
+                            stepSize: 100
+                        },
+                        title: {
+                            display: true,
+                            text: 'CO2 Level (ppm)'
+                        },
+                        grid: {
+                            color: 'rgba(0, 0, 0, 0.1)'
+                        }
+                    },
+                    x: {
+                        grid: {
+                            display: false
+                        },
+                        ticks: {
+                            maxRotation: 45,
+                            minRotation: 45,
+                            autoSkip: true,
+                            maxTicksLimit: 12
+                        }
+                    }
+                },
+                plugins: {
+                    legend: {
+                        display: true,
+                        position: 'top'
+                    }
+                }
+            }
+        });
+
+        function updateCircle(circle, value, max) {
+            const radius = 54;
+            const circumference = 2 * Math.PI * radius;
+            const progress = Math.min(value / max, 1);
+            const offset = circumference - progress * circumference;
+            circle.style.strokeDasharray = `${circumference} ${circumference}`;
+            circle.style.strokeDashoffset = offset;
+        }
+
+        function getCO2Status(value) {
+            if (value <= co2Thresholds.optimal) return 'optimal';
+            if (value <= co2Thresholds.warning) return 'warning';
+            return 'danger';
+        }
+
+        function updateDashboard(data) {
+            const temperature = parseFloat(data.Temperature.toFixed(1));
+            const humidity = parseFloat(data.Humidity.toFixed(1));
+            const co2 = parseFloat(data.CO2.toFixed(0));
+            const timestamp = new Date().toLocaleTimeString();
+            const status = getCO2Status(co2);
+
+            // Update values
+            tempVal.textContent = temperature;
+            humVal.textContent = humidity;
+            co2Val.textContent = co2;
+            lastUpdate.textContent = timestamp;
+
+            // Update status indicator
+            const statusElement = document.querySelector('.co2 .status');
+            statusElement.className = 'status ' + status;
+            statusElement.textContent = status.charAt(0).toUpperCase() + status.slice(1);
+
+            // Update circle progress
+            updateCircle(temperatureCircle, temperature, 40); // Assuming max temperature is 40°C
+            updateCircle(humidityCircle, humidity, 100); // Assuming max humidity is 100%
+            updateCircle(co2Circle, co2, 1200);
+
+            // Update Real-Time Chart
+            const maxPoints = 20; // Increased for better trend visualization
+            realTimeChart.data.labels.push(timestamp);
+            realTimeChart.data.datasets[0].data.push(co2);
+
+            if (realTimeChart.data.labels.length > maxPoints) {
+                realTimeChart.data.labels.shift();
+                realTimeChart.data.datasets[0].data.shift();
+            }
+
+            // Update CO2 Report Chart
+            co2Chart.data.labels.push(timestamp);
+            co2Chart.data.datasets[0].data.push(co2);
+
+            if (co2Chart.data.labels.length > maxPoints) {
+                co2Chart.data.labels.shift();
+                co2Chart.data.datasets[0].data.shift();
+            }
+
+            // Update data points count
+            dataPoints.textContent = realTimeChart.data.labels.length;
+
+            // Update chart colors based on CO2 level
+            const dataset = realTimeChart.data.datasets[0];
+            const co2Dataset = co2Chart.data.datasets[0];
+            
+            if (status === 'optimal') {
+                dataset.borderColor = '#4caf50';
+                dataset.backgroundColor = 'rgba(76, 175, 80, 0.1)';
+                co2Dataset.borderColor = '#4caf50';
+                co2Dataset.backgroundColor = 'rgba(76, 175, 80, 0.1)';
+            } else if (status === 'warning') {
+                dataset.borderColor = '#ff9800';
+                dataset.backgroundColor = 'rgba(255, 152, 0, 0.1)';
+                co2Dataset.borderColor = '#ff9800';
+                co2Dataset.backgroundColor = 'rgba(255, 152, 0, 0.1)';
+            } else {
+                dataset.borderColor = '#f44336';
+                dataset.backgroundColor = 'rgba(244, 67, 54, 0.1)';
+                co2Dataset.borderColor = '#f44336';
+                co2Dataset.backgroundColor = 'rgba(244, 67, 54, 0.1)';
+            }
+
+            realTimeChart.update();
+            co2Chart.update();
+        }
+
+        function updateReportChart(data) {
+            const timestamps = Object.keys(data);
+            const temperatures = timestamps.map(ts => data[ts].Temperature);
+            const humidities = timestamps.map(ts => data[ts].Humidity);
+            const co2Levels = timestamps.map(ts => data[ts].CO2);
+            const formattedTimestamps = timestamps.map(ts => new Date(ts).toLocaleTimeString());
+
+            // Update Temperature and Humidity Chart
+            tempHumidityChart.data.labels = formattedTimestamps;
+            tempHumidityChart.data.datasets[0].data = temperatures;
+            tempHumidityChart.data.datasets[1].data = humidities;
+            tempHumidityChart.update();
+
+            // Update CO2 Chart
+            co2Chart.data.labels = formattedTimestamps;
+            co2Chart.data.datasets[0].data = co2Levels;
+            co2Chart.update();
+        }
+
+        // Listen for real-time updates from Firebase
+        onValue(sensorRef, (snapshot) => {
+            const data = snapshot.val();
+            if (data) {
+                const latestKey = Object.keys(data).pop();
+                const latestData = data[latestKey];
+                updateDashboard(latestData);
+            } else {
+                console.warn('No real-time data available in Firebase.');
+            }
+        });
+
+        // Fetch historical data for the report chart
+        get(sensorRef).then((snapshot) => {
+            if (snapshot.exists()) {
+                const data = snapshot.val();
+                updateReportChart(data);
+            } else {
+                console.warn('No historical data available in Firebase.');
+            }
+        }).catch((error) => {
+            console.error('Error fetching historical data:', error);
+        });
+    </script>
+    </head>
+    <body>
+        <div class="dashboard-container">
+            <aside class="sidebar">
+                <div class="logo">
+                    <img src="assets/logo.png" alt="NetZero Logo">
+                    <h1>NetZero Impact</h1>
+                </div>
+                <ul class="nav-links">
+                    <li class="active"><a href="dashboard.html"><i class="material-icons">dashboard</i>Dashboard</a></li>
+                    <li><a href="analytics.html"><i class="material-icons">analytics</i>AI Analytics</a></li>
+                    <li><a href="chatbot.html"><i class="material-icons">chat</i>Chatbot</a></li>
+                    <li class="home-link"><a href="landing.html"><i class="material-icons">home</i>Back to Home</a></li>
+                </ul>
+            </aside>
+
+        
+            <main class="main-content">
+                <!-- Real-time Sensor Metrics -->
+                <div class="sensor-metrics">
+                    <div class="metric-card temperature">
+                        <div class="metric-circle">
+                            <svg class="progress-ring" width="120" height="120">
+                                <circle class="progress-ring-circle" cx="60" cy="60" r="54"/>
+                            </svg>
+                            <div class="metric-value">
+                                <span class="current-value">--</span>°C
+                            </div>
+                        </div>
+                        <h3>Temperature</h3>
+                        <div class="metric-details">
+                            <span class="range">Range: 18-30°C</span>
+                            <span class="status optimal">Optimal</span>
                         </div>
                     </div>
-                    <h3>Temperature</h3>
-                    <div class="metric-details">
-                        <span class="range">Range: 18-30°C</span>
-                        <span class="status optimal">Optimal</span>
+    
+                    <div class="metric-card humidity">
+                        <div class="metric-circle">
+                            <svg class="progress-ring" width="120" height="120">
+                                <circle class="progress-ring-circle" cx="60" cy="60" r="54"/>
+                            </svg>
+                            <div class="metric-value">
+                                <span class="current-value">--</span>%
+                            </div>
+                        </div>
+                        <h3>Humidity</h3>
+                        <div class="metric-details">
+                            <span class="range">Range: 30-60%</span>
+                            <span class="status warning">High</span>
+                        </div>
+                    </div>
+    
+                    <div class="metric-card co2">
+                        <div class="metric-circle">
+                            <svg class="progress-ring" width="120" height="120">
+                                <circle class="progress-ring-circle" cx="60" cy="60" r="54"/>
+                            </svg>
+                            <div class="metric-value">
+                                <span class="current-value">--</span>ppm
+                            </div>
+                        </div>
+                        <h3>CO2 Level</h3>
+                        <div class="metric-details">
+                            <span class="range">Range: 400-1000ppm</span>
+                            <span class="status optimal">Good</span>
+                        </div>
                     </div>
                 </div>
-
-                <div class="metric-card humidity">
-                    <div class="metric-circle">
-                        <svg class="progress-ring">
-                            <circle class="progress-ring-circle" cx="60" cy="60" r="54"/>
-                        </svg>
-                        <div class="metric-value">
-                            <span class="current-value">45</span>%
+    
+                <!-- Real-time Sensor Data Chart -->
+                <div class="sensor-data">
+                    <h2>Real-time Sensor Data</h2>
+                    <div class="data-grid">
+                        <div class="chart-container">
+                            <canvas id="realTimeChart"></canvas>
                         </div>
-                    </div>
-                    <h3>Humidity</h3>
-                    <div class="metric-details">
-                        <span class="range">Range: 30-60%</span>
-                        <span class="status warning">High</span>
-                    </div>
-                </div>
-
-                <div class="metric-card co2">
-                    <div class="metric-circle">
-                        <svg class="progress-ring">
-                            <circle class="progress-ring-circle" cx="60" cy="60" r="54"/>
-                        </svg>
-                        <div class="metric-value">
-                            <span class="current-value">450</span>ppm
-                        </div>
-                    </div>
-                    <h3>CO2 Level</h3>
-                    <div class="metric-details">
-                        <span class="range">Range: 400-1000ppm</span>
-                        <span class="status optimal">Good</span>
-                    </div>
-                </div>
-            </div>
-
-            <!-- Real-time sensor data section -->
-            <div class="sensor-data">
-                <h2>Real-time Sensor Data</h2>
-                <div class="data-grid">
-                    <div class="chart-container">
-                        <canvas id="realTimeChart"></canvas>
-                    </div>
-                    <div class="sensor-stats">
-                        <div class="stat-item">
-                            <h4>Last Updated</h4>
-                            <p id="lastUpdate">Just now</p>
-                        </div>
-                        <div class="stat-item">
-                            <h4>Data Points</h4>
-                            <p id="dataPoints">1,234</p>
-                        </div>
-                        <div class="stat-item">
-                            <h4>Status</h4>
-                            <p class="status active">Active</p>
+                        <div class="sensor-stats">
+                            <div class="stat-item">
+                                <h4>Last Updated</h4>
+                                <p id="lastUpdate">--</p>
+                            </div>
+                            <div class="stat-item">
+                                <h4>Data Points</h4>
+                                <p id="dataPoints">--</p>
+                            </div>
+                            <div class="stat-item">
+                                <h4>Status</h4>
+                                <p class="status active">Active</p>
+                            </div>
                         </div>
                     </div>
                 </div>
-            </div>
-        </main>
-    </div>
-</body>
-</html> 
+    
+                <!-- Reports Section -->
+                <div id="reports" class="reports">
+                    <h2>Reports</h2>
+                    <div class="reports-grid">
+                        <div class="chart-container temp-humidity-chart">
+                            <h3>Temperature & Humidity</h3>
+                            <canvas id="tempHumidityChart"></canvas>
+                        </div>
+                        <div class="chart-container co2-chart">
+                            <h3>CO2 Levels</h3>
+                            <canvas id="co2Chart"></canvas>
+                        </div>
+                    </div>
+                </div>
+            </main>
+        </div>
+    </body>
+    </html>

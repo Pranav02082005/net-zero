@@ -395,4 +395,68 @@
     .chart-container {
         height: 300px;
     }
+}
+
+.reports {
+    margin-top: 2rem;
+    padding: 1.5rem;
+    background: white;
+    border-radius: 10px;
+    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+}
+
+.reports h2 {
+    margin-bottom: 1.5rem;
+    color: #333;
+}
+
+.reports-grid {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 2rem;
+    margin-top: 1rem;
+}
+
+.chart-container {
+    background: white;
+    padding: 1.5rem;
+    border-radius: 8px;
+    box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
+    height: 400px;
+    position: relative;
+    margin-bottom: 2rem;
+}
+
+.chart-container h3 {
+    margin-bottom: 1.5rem;
+    color: #333;
+    font-size: 1.1rem;
+}
+
+.chart-container canvas {
+    height: calc(100% - 3rem) !important;
+    width: 100% !important;
+}
+
+.temp-humidity-chart {
+    margin-right: 1rem;
+    padding-bottom: 2rem;
+}
+
+.co2-chart {
+    margin-left: 1rem;
+    padding-bottom: 2rem;
+}
+
+@media (max-width: 1200px) {
+    .reports-grid {
+        grid-template-columns: 1fr;
+        gap: 2rem;
+    }
+    
+    .temp-humidity-chart,
+    .co2-chart {
+        margin: 0;
+        height: 450px;
+    }
 } 
